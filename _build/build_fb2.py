@@ -51,9 +51,15 @@ def main():
     if not os.path.exists(BOOK):
         sys.exit("no book")
     data = open(BOOK, encoding="utf-8").read()
-    start_tag = "<section><title><p>Глава I</p></title>"
-    i = data.find(start_tag)
-    j = data.find("<section><title><p>Глава II</p></title>")
+    # Поддерживаем как исходную разметку Айвенго, так и уже собранную главу:
+    # повторный запуск должен обновлять главу I, а не завершаться ошибкой.
+    start_match = re.search(
+        r'<section><title>(?:(?!</title>).)*?<p>Глава I(?:</p>|\.[^<]*</p>)</title>',
+        data,
+        re.S,
+    )
+    i = start_match.start() if start_match else -1
+    j = data.find("<section><title><p>Глава II</p></title>", i if i >= 0 else 0)
     if i < 0 or j < 0 or j < i:
         sys.exit("chapter markers not found")
     new = convert(SRC)
